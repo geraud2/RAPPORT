@@ -17,6 +17,89 @@ if (!supabaseUrl || !supabaseAnonKey) {
 export const supabase = createClient(supabaseUrl || '', supabaseAnonKey || '');
 
 // ============================================
+// GESTION DES EMPLOYÉS (À AJOUTER)
+// ============================================
+
+export interface Employee {
+  id: number;
+  name: string;
+  code: string;
+  role: string;
+  is_active: boolean;
+  created_at: string;
+  last_login: string | null;
+}
+
+// Vérifier si un employé existe par son code
+export async function getEmployeeByCode(code: string): Promise<Employee | null> {
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .eq('code', code)
+      .eq('is_active', true)
+      .single();
+    
+    if (error) return null;
+    return data;
+  } catch (error) {
+    console.error('Erreur getEmployeeByCode:', error);
+    return null;
+  }
+}
+
+// Enregistrer un nouvel employé
+export async function registerEmployee(name: string, code: string): Promise<Employee | null> {
+  try {
+    // Vérifier si le code existe déjà
+    const existing = await getEmployeeByCode(code);
+    if (existing) {
+      throw new Error("Ce code existe déjà");
+    }
+    
+    const { data, error } = await supabase
+      .from('employees')
+      .insert({ name, code, is_active: true })
+      .select()
+      .single();
+    
+    if (error) throw error;
+    return data;
+  } catch (error) {
+    console.error('Erreur registerEmployee:', error);
+    return null;
+  }
+}
+
+// Mettre à jour la date de dernier login
+export async function updateEmployeeLastLogin(employeeId: number): Promise<void> {
+  try {
+    await supabase
+      .from('employees')
+      .update({ last_login: new Date().toISOString() })
+      .eq('id', employeeId);
+  } catch (error) {
+    console.error('Erreur updateEmployeeLastLogin:', error);
+  }
+}
+
+// Récupérer tous les employés (pour le boss)
+export async function getAllEmployees(): Promise<Employee[]> {
+  try {
+    const { data, error } = await supabase
+      .from('employees')
+      .select('*')
+      .order('name');
+    
+    if (error) throw error;
+    return data || [];
+  } catch (error) {
+    console.error('Erreur getAllEmployees:', error);
+    return [];
+  }
+}
+
+// ============================================
 // TYPES
 // ============================================
 
